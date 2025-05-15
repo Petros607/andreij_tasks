@@ -30,12 +30,25 @@ def query_llama(prompt: str) -> str:
     except Exception as e:
         return f"Ошибка соединения с Ollama: {e}"
 
+@dp.message_handler(commands=['start'])
+async def handle_start(message: Message):
+    welcome_text = (
+        "Привет! Я — Telegram-бот, подключённый к локальной языковой модели LLaMA 3 🦙\n\n"
+        "Просто напиши мне сообщение, и я постараюсь ответить.\n"
+        "В любой момент ты можешь ввести /start, чтобы начать диалог заново."
+    )
+    await message.answer(welcome_text)
+
 @dp.message_handler()
 async def handle_message(message: Message):
-    user_text = message.text
-    await message.answer("Думаю...")
-    response = query_llama(user_text)
-    await message.answer(response)
+    if message.text:
+        user_text = message.text.strip()
+        if user_text:
+            await message.answer("🤖 Думаю...")
+            response = query_llama(user_text)
+            await message.answer(response)
+    else:
+        await message.answer("Я понимаю только текстовые сообщения.")
 
 if __name__ == '__main__':
     print("Бот запущен!")
