@@ -1,21 +1,26 @@
 import logging
 import requests
-from aiogram import Bot, Dispatcher, types
-from aiogram.enums.parse_mode import ParseMode
-from aiogram.types import Message
-from aiogram.utils import executor
-from dotenv import load_dotenv
 import os
+import asyncio
+from dotenv import load_dotenv
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import Message
+from aiogram import Router
 
-load_dotenv()
+load_dotenv(encoding="utf-8")
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434/api/generate")
 
+print(TELEGRAM_TOKEN)
+print(OLLAMA_API_URL)
+
 logging.basicConfig(level=logging.INFO)
-bot = Bot(token=TELEGRAM_TOKEN, parse_mode=ParseMode.HTML)
-dp = Dispatcher(bot)
+bot = Bot(token=TELEGRAM_TOKEN)
+dp = Dispatcher()
+router = Router()
+dp.include_router(router)
 
 def query_llama(prompt: str) -> str:
     try:
@@ -30,7 +35,7 @@ def query_llama(prompt: str) -> str:
     except Exception as e:
         return f"Ошибка соединения с Ollama: {e}"
 
-@dp.message_handler(commands=['start'])
+@router.message(F.text == "/start")
 async def handle_start(message: Message):
     welcome_text = (
         "Привет! Я — Telegram-бот, подключённый к локальной языковой модели LLaMA 3 🦙\n\n"
@@ -39,7 +44,7 @@ async def handle_start(message: Message):
     )
     await message.answer(welcome_text)
 
-@dp.message_handler()
+@router.message(F.text)
 async def handle_message(message: Message):
     if message.text:
         user_text = message.text.strip()
@@ -50,6 +55,10 @@ async def handle_message(message: Message):
     else:
         await message.answer("Я понимаю только текстовые сообщения.")
 
-if __name__ == '__main__':
+async def main():
     print("Бот запущен!")
-    executor.start_polling(dp, skip_updates=True)
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot)
+
+if __name__ == '__main__':
+    asyncio.run(main())
