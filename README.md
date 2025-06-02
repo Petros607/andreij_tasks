@@ -1,10 +1,8 @@
-# andreij_tasks
+# Nltk + scikit-learn
 
-Этот репозиторий содержит решения для 4-х тасков:
-
-## Ветки
-
-- [`task1`](https://github.com/Petros607/andreij_tasks/tree/task1) - Токенайзер
-- [`task2`](https://github.com/Petros607/andreij_tasks/tree/task2) - Чат-бот
-- [`task3`](https://github.com/Petros607/andreij_tasks/tree/task3) - Nltk + scikit-learn
-- [`task4`](https://github.com/Petros607/andreij_tasks/tree/task4) - PyQt + Ollama
+Технические требования:
+- Используйте Python с библиотеками NLTK и scikit-learn. 
+- Сохраните реализацию в файле с названием film_sentiment_evaluator.py. 
+- Создайте публичный репозиторий на платформе GitHub, загрузите код и предоставьте ссылку на него. 
+- В выводе программы должны присутствовать: Числовой показатель точности модели. 
+- Не менее трёх случайно выбранных примеров, где указаны текст рецензии (в обработанном виде), истинный класс и предсказанный класс.
