@@ -19,7 +19,7 @@ from transformers.pipelines import pipeline
 from peft import get_peft_model, LoraConfig
 from sklearn.metrics import accuracy_score, classification_report
 from nltk.translate.bleu_score import sentence_bleu
-from rouge import Rouge
+from rouge_score import rouge_scorer
 
 
 MODEL_NAME = "gpt2"
@@ -101,7 +101,7 @@ def evaluate_model(model, tokenizer, questions, true_answers, max_length=100):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.eval()
 
-    rouge = Rouge()
+    scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=True)
     bleu_scores = []
     rouge_scores = []
 
@@ -130,8 +130,8 @@ def evaluate_model(model, tokenizer, questions, true_answers, max_length=100):
         bleu = sentence_bleu([true_answer.split()], generated_answer.split())
         bleu_scores.append(bleu)
 
-        rouge_result = rouge.get_scores(generated_answer, true_answer)[0]
-        rouge_scores.append(rouge_result['rouge-l']['f'])
+        rouge_result = scorer.score(true_answer, generated_answer)
+        rouge_scores.append(rouge_result['rougeL'].fmeasure)
 
     avg_bleu = np.mean(bleu_scores)
     avg_rouge = np.mean(rouge_scores)
