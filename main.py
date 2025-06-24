@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""lora_gpt2_fine_tuning.py
-Fine-tuning GPT-2 using LoRA on support QA pairs.
-"""
-
-# pip install transformers peft datasets torch scikit-learn
-
 import torch
 import pandas as pd
 import numpy as np
@@ -17,7 +10,6 @@ from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
 from transformers.pipelines import pipeline
 from peft import get_peft_model, LoraConfig, PeftModel, PeftConfig
-from sklearn.metrics import accuracy_score, classification_report
 from nltk.translate.bleu_score import sentence_bleu
 from rouge_score import rouge_scorer
 
@@ -49,8 +41,7 @@ def prepare_model_and_tokenizer(model_name: str):
     lora_config = LoraConfig(
         r=8,
         lora_alpha=32,
-        lora_dropout=0.1,
-        task_type="CAUSAL_LM"
+        lora_dropout=0.1
     )
     model = get_peft_model(model, lora_config)
 
@@ -79,7 +70,7 @@ def fine_tune(model, tokenizer, tokenized_dataset, output_dir):
     training_args = TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=4,
-        num_train_epochs=7,
+        num_train_epochs=15,
         logging_dir='./logs',
         logging_steps=10,
         save_steps=500,
@@ -97,7 +88,7 @@ def fine_tune(model, tokenizer, tokenized_dataset, output_dir):
     tokenizer.save_pretrained(output_dir)
     print(f"Model and tokenizer saved to {output_dir}")
 
-def evaluate_model(peft_model_dir, test_questions, true_answers, max_length=100):
+def evaluate_model(peft_model_dir, test_questions, true_answers, max_length=256):
     """
     Load PEFT model and evaluate it on test questions.
     """
@@ -125,9 +116,6 @@ def evaluate_model(peft_model_dir, test_questions, true_answers, max_length=100)
                 max_length=max_length,
                 num_beams=5,
                 early_stopping=True,
-                temperature=0.7,
-                top_k=40,
-                top_p=0.9,
                 repetition_penalty=1.2,
                 pad_token_id=tokenizer.eos_token_id,
             )
@@ -139,9 +127,9 @@ def evaluate_model(peft_model_dir, test_questions, true_answers, max_length=100)
         else:
             generated_answer = generated.strip()
 
-        print(f"\nQ: {question}")
-        print(f"Real A: {true_answer}")
-        print(f"Pred A: {generated_answer}")
+        print(f"\nQuestion: {question}")
+        print(f"Real Ans: {true_answer}")
+        print(f"Generated Ans: {generated_answer}")
 
         bleu = sentence_bleu([true_answer.split()], generated_answer.split())
         bleu_scores.append(bleu)
