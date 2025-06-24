@@ -15,6 +15,7 @@ from transformers import (
 from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
 from peft import get_peft_model, LoraConfig
+from sklearn.metrics import accuracy_score, classification_report
 
 MODEL_NAME = "gpt2"
 OUTPUT_DIR = "./lora-gpt2"
@@ -88,11 +89,13 @@ def fine_tune(model, tokenizer, tokenized_dataset, output_dir):
     tokenizer.save_pretrained(output_dir)
     print(f"Model and tokenizer saved to {output_dir}")
 
-def generate_answers(model, tokenizer, questions):
+def evaluate_answers(model, tokenizer, test_questions, true_answers):
     """
-    Generate answers for a list of questions using the fine-tuned model.
+    Generate answers for a list of questions using the fine-tuned model and evaluate them.
     """
-    for question in questions:
+    generated_answers = []
+    
+    for question in test_questions:
         input_text = question + " "
         input_ids = tokenizer.encode(input_text, return_tensors='pt')
         output = model.generate(
@@ -102,7 +105,18 @@ def generate_answers(model, tokenizer, questions):
             pad_token_id=tokenizer.eos_token_id
         )
         answer = tokenizer.decode(output[0], skip_special_tokens=True)
-        print(f"Вопрос: {question}\nОтвет: {answer}\n")
+        generated_answers.append(answer.strip())
+        
+        print(f"Вопрос: {question}\nОтвет: {answer.strip()}\n")
+
+    predicted_labels = [1 if ans == true_ans else 0 for ans, true_ans in zip(generated_answers, true_answers)]
+    true_labels = [1] * len(true_answers)
+
+    accuracy = accuracy_score(true_labels, predicted_labels)
+    report = classification_report(true_labels, predicted_labels, target_names=["Incorrect", "Correct"])
+
+    print(f"Classification Accuracy: {accuracy:.4f}")
+    print("Classification Report:\n", report)
 
 if __name__ == "__main__":
     torch.manual_seed(SEED)
@@ -125,4 +139,17 @@ if __name__ == "__main__":
         "Как получить доступ к обучающим материалам?"
     ]
 
-    generate_answers(model, tokenizer, test_questions)
+    true_answers = [
+        "Чтобы сбросить пароль, перейдите на страницу восстановления пароля.",
+        "Если вы не можете войти, проверьте правильность введенных данных.",
+        "Чтобы обновить информацию о платеже, войдите в свой аккаунт и перейдите в раздел 'Платежи'.",
+        "Инструкции по установке можно найти в разделе 'Поддержка' на нашем сайте.",
+        "Вы можете связаться с технической поддержкой по телефону или через чат на сайте.",
+        "Если приложение не запускается, попробуйте переустановить его.",
+        "Статус вашего заказа можно проверить в разделе 'Мои заказы' в аккаунте.",
+        "Настройки конфиденциальности можно изменить в разделе 'Настройки' вашего аккаунта.",
+        "Чтобы удалить учетную запись, перейдите в настройки и выберите 'Удалить учетную запись'.",
+        "Обучающие материалы доступны в разделе 'Обучение' на нашем сайте."
+    ]
+
+    evaluate_answers(model, tokenizer, test_questions, true_answers)
