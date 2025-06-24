@@ -14,3 +14,5 @@ pip install transformers datasets torch scikit-learn
 ``` bash
 python main.py
 ```
+
+<img width="405" alt="Снимок экрана 2025-06-24 в 05 45 26" src="https://github.com/user-attachments/assets/8889faa1-ca9f-4955-9dd3-e830dd224912" />
