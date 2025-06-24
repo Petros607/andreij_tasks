@@ -77,7 +77,7 @@ def fine_tune(model, tokenizer, tokenized_dataset, output_dir):
     training_args = TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=4,
-        num_train_epochs=5,
+        num_train_epochs=7,
         logging_dir='./logs',
         logging_steps=10,
         save_steps=500,
@@ -114,7 +114,10 @@ def evaluate_model(model, tokenizer, questions, true_answers, max_length=100):
                 max_length=max_length,
                 num_beams=5,
                 early_stopping=True,
-                pad_token_id=tokenizer.eos_token_id
+                pad_token_id=tokenizer.eos_token_id,
+                temperature=0.7,
+                top_k=50,
+                top_p=0.95
             )
         generated = tokenizer.decode(output_ids[0], skip_special_tokens=True)
 
