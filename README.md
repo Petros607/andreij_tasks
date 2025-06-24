@@ -1,12 +1,16 @@
-# andreij_tasks
+# distilbert-base-uncased (f-t)
 
-Этот репозиторий содержит решения для задач с тестов с курса по LLM:
+## Задание
 
-## Ветки
+У вас есть небольшой набор данных с отзывами о ресторанах (50 положительных и 50 отрицательных). 
+Ваша задача — дообучить модель на основе distilbert-base-uncased из библиотеки transformers, чтобы она могла классифицировать отзывы как положительные или отрицательные. 
+Набор данных: CSV-файл с двумя столбцами: text (текст отзыва) и label (0 для отрицательного, 1 для положительного). После дообучения протестируйте модель на 10 новых отзывах.
 
-- [`task1`](https://github.com/Petros607/andreij_tasks/tree/task1) - Токенайзер
-- [`task2`](https://github.com/Petros607/andreij_tasks/tree/task2) - Чат-бот
-- [`task3`](https://github.com/Petros607/andreij_tasks/tree/task3) - Nltk + scikit-learn
-- [`task4`](https://github.com/Petros607/andreij_tasks/tree/task4) - PyQt + Ollama
-- [`task5`](https://github.com/Petros607/andreij_tasks/tree/task5) - distilbert-base-uncased (f-t)
-- [`task6`](https://github.com/Petros607/andreij_tasks/tree/task6) - gpt2 + LoRA (f-t)
+## Запуск
+
+``` bash
+pip install transformers datasets torch scikit-learn
+```
+``` bash
+python main.py
+```
