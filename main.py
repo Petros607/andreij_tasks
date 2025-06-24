@@ -7,6 +7,7 @@ Fine-tuning GPT-2 using LoRA on support QA pairs.
 
 import torch
 import pandas as pd
+import numpy as np
 from datasets import Dataset
 from transformers import (
     AutoTokenizer,
@@ -14,8 +15,12 @@ from transformers import (
 )
 from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
+from transformers.pipelines import pipeline
 from peft import get_peft_model, LoraConfig
 from sklearn.metrics import accuracy_score, classification_report
+from nltk.translate.bleu_score import sentence_bleu
+from rouge import Rouge
+
 
 MODEL_NAME = "gpt2"
 OUTPUT_DIR = "./lora-gpt2"
@@ -89,34 +94,47 @@ def fine_tune(model, tokenizer, tokenized_dataset, output_dir):
     tokenizer.save_pretrained(output_dir)
     print(f"Model and tokenizer saved to {output_dir}")
 
-def evaluate_answers(model, tokenizer, test_questions, true_answers):
+def evaluate_model(model, tokenizer, questions, true_answers, max_length=100):
     """
     Generate answers for a list of questions using the fine-tuned model and evaluate them.
     """
-    generated_answers = []
-    
-    for question in test_questions:
-        input_text = question + " "
-        input_ids = tokenizer.encode(input_text, return_tensors='pt')
-        output = model.generate(
-            input_ids,
-            max_length=150,
-            num_return_sequences=1,
-            pad_token_id=tokenizer.eos_token_id
-        )
-        answer = tokenizer.decode(output[0], skip_special_tokens=True)
-        generated_answers.append(answer.strip())
-        
-        print(f"Вопрос: {question}\nОтвет: {answer.strip()}\n")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.eval()
 
-    predicted_labels = [1 if ans == true_ans else 0 for ans, true_ans in zip(generated_answers, true_answers)]
-    true_labels = [1] * len(true_answers)
+    rouge = Rouge()
+    bleu_scores = []
+    rouge_scores = []
 
-    accuracy = accuracy_score(true_labels, predicted_labels)
-    report = classification_report(true_labels, predicted_labels, target_names=["Incorrect", "Correct"])
+    print("\n=== Evaluation ===")
+    for i, (question, true_answer) in enumerate(zip(questions, true_answers)):
+        input_ids = tokenizer.encode(question, return_tensors='pt').to(device)
+        with torch.no_grad():
+            output_ids = model.generate(
+                input_ids,
+                max_length=max_length,
+                num_beams=5,
+                early_stopping=True,
+                pad_token_id=tokenizer.eos_token_id
+            )
+        generated = tokenizer.decode(output_ids[0], skip_special_tokens=True)
 
-    print(f"Classification Accuracy: {accuracy:.4f}")
-    print("Classification Report:\n", report)
+        generated_answer = generated[len(question):].strip()
+
+        print(f"\nQ: {question}")
+        print(f"Real A: {true_answer}")
+        print(f"Pred A: {generated_answer}")
+
+        bleu = sentence_bleu([true_answer.split()], generated_answer.split())
+        bleu_scores.append(bleu)
+
+        rouge_result = rouge.get_scores(generated_answer, true_answer)[0]
+        rouge_scores.append(rouge_result['rouge-l']['f'])
+
+    avg_bleu = np.mean(bleu_scores)
+    avg_rouge = np.mean(rouge_scores)
+
+    print(f"\nAverage BLEU: {avg_bleu:.4f}")
+    print(f"Average ROUGE-L F1: {avg_rouge:.4f}")
 
 if __name__ == "__main__":
     torch.manual_seed(SEED)
@@ -125,6 +143,9 @@ if __name__ == "__main__":
     model, tokenizer = prepare_model_and_tokenizer(MODEL_NAME)
     tokenized_dataset = tokenize_dataset(dataset, tokenizer)
     fine_tune(model, tokenizer, tokenized_dataset, OUTPUT_DIR)
+
+    model = AutoModelForCausalLM.from_pretrained(OUTPUT_DIR).to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    tokenizer = AutoTokenizer.from_pretrained(OUTPUT_DIR)
 
     test_questions = [
         "Как я могу сбросить пароль?",
@@ -152,4 +173,4 @@ if __name__ == "__main__":
         "Обучающие материалы доступны в разделе 'Обучение' на нашем сайте."
     ]
 
-    evaluate_answers(model, tokenizer, test_questions, true_answers)
+    evaluate_model(model, tokenizer, test_questions, true_answers)

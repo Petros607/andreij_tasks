@@ -5,7 +5,7 @@
 ## Запуск
 
 ``` bash
-pip install transformers datasets torch scikit-learn peft
+pip install transformers datasets torch scikit-learn peft nltk rouge-score
 ```
 ``` bash
 python main.py
