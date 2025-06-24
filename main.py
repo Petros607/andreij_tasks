@@ -36,8 +36,8 @@ def prepare_model_and_tokenizer(model_name: str):
     """
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
-
-    model = AutoModelForCausalLM.from_pretrained(model_name)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
     model.resize_token_embeddings(len(tokenizer))
 
     lora_config = LoraConfig(
